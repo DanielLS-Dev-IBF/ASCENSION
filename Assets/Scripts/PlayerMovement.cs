@@ -21,37 +21,53 @@ public class playerMovement : MonoBehaviour
     void Update()
     {
         // Start charging the jump
-        if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
+        if (Input.GetKeyDown(KeyCode.Space) && isGrounded && !isCharging)
         {
             isCharging = true;
             chargeTime = 0f; // Reset charge time
         }
 
-        // Continue charging the jump
+        // Continue charging the jump and check for jump conditions
         if (isCharging)
         {
             chargeTime += Time.deltaTime;
-            chargeTime = Mathf.Clamp(chargeTime, 0f, maxChargeTime); // Limit charge time to 2 seconds
+
+            bool keyReleased = Input.GetKeyUp(KeyCode.Space);
+            bool maxChargeReached = chargeTime >= maxChargeTime;
+
+            if (maxChargeReached)
+            {
+                chargeTime = maxChargeTime; // Ensure chargeTime is capped at max for calculation
+                PerformJump();
+            }
+            else if (keyReleased)
+            {
+                // Jump with current chargeTime (which is < maxChargeTime)
+                PerformJump();
+            }
         }
+    }
 
-        // Release the jump
-        if (Input.GetKeyUp(KeyCode.Space) && isCharging)
-        {
-            isCharging = false;
-            float jumpForce = Mathf.Lerp(0f, maxJumpForce, chargeTime / maxChargeTime); // Calculate jump force based on charge time
+    void PerformJump()
+    {
+        isCharging = false; // Stop charging state
 
-            // Get horizontal input for jump direction
-            float horizontalInput = Input.GetAxis("Horizontal");
-            Vector2 jumpDirection = new Vector2(horizontalInput, 1).normalized; // Combine horizontal input with upward direction
-            rb.AddForce(jumpDirection * jumpForce, ForceMode2D.Impulse); // Apply force in the calculated direction
+        // Clamp chargeTime here to ensure the ratio is correct for Lerp,
+        // even if it slightly exceeded maxChargeTime before this method was called.
+        float currentActualChargeTime = Mathf.Clamp(chargeTime, 0f, maxChargeTime);
+        float jumpForce = Mathf.Lerp(0f, maxJumpForce, currentActualChargeTime / maxChargeTime); // Calculate jump force
 
-            isGrounded = false; // Set isGrounded to false after jumping
-        }
+        // Get horizontal input for jump direction
+        float horizontalInput = Input.GetAxis("Horizontal");
+        Vector2 jumpDirection = new Vector2(horizontalInput, 1).normalized; // Combine horizontal input with upward direction
+        rb.AddForce(jumpDirection * jumpForce, ForceMode2D.Impulse); // Apply force in the calculated direction
+
+        isGrounded = false; // Set isGrounded to false after jumping
     }
 
     void FixedUpdate()
     {
-        // Allow horizontal movement only when the player is grounded
+        // Allow horizontal movement only when the player is grounded and not charging
         if (isGrounded && !isCharging)
         {
             float moveHorizontal = Input.GetAxis("Horizontal"); // Get horizontal input (A/D or Left/Right arrow keys)

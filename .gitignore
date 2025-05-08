@@ -26,3 +26,6 @@ crashlytics-build.properties
 
 # Otros
 .DS_Store
+
+# User-specific (configuración personal de Unity que no debe subirse)
+UserSettings/
